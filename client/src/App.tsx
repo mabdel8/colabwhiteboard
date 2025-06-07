@@ -25,6 +25,7 @@ function App() {
   const drawing = useRef(false);
   const [tool, setTool] = useState<Tool>('pen');
   const [color, setColor] = useState<string>('black');
+  const [lineWidth, setLineWidth] = useState<number>(5);
 
   useEffect(() => {
     if (!roomId) return;
@@ -42,7 +43,7 @@ function App() {
     context.scale(2, 2);
     context.lineCap = 'round';
     context.strokeStyle = color;
-    context.lineWidth = 5;
+    context.lineWidth = lineWidth;
     contextRef.current = context;
 
     socket.on('initial-drawings', (drawings: DrawingData[]) => {
@@ -51,7 +52,7 @@ function App() {
     });
 
     socket.on('drawing', onDrawingEvent);
-  }, [roomId, color]);
+  }, [roomId, color, lineWidth]);
 
   const handleJoinRoom = () => {
     if (roomInput.trim()) {
@@ -86,7 +87,7 @@ function App() {
       contextRef.current.lineWidth = 20;
     } else {
       contextRef.current.strokeStyle = color;
-      contextRef.current.lineWidth = 5;
+      contextRef.current.lineWidth = lineWidth;
     }
 
     contextRef.current.lineTo(offsetX, offsetY);
@@ -140,7 +141,12 @@ function App() {
 
   return (
     <div>
-      <Toolbar setTool={setTool} setColor={setColor} />
+      <Toolbar
+        setTool={setTool}
+        setColor={setColor}
+        setLineWidth={setLineWidth}
+        lineWidth={lineWidth}
+      />
       <canvas
         ref={canvasRef}
         onMouseDown={startDrawing}
