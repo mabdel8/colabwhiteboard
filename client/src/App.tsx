@@ -11,6 +11,7 @@ function App() {
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const drawing = useRef(false);
   const [tool, setTool] = useState<Tool>('pen');
+  const [color, setColor] = useState<string>('black');
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -57,7 +58,7 @@ function App() {
       contextRef.current.strokeStyle = 'white';
       contextRef.current.lineWidth = 20;
     } else {
-      contextRef.current.strokeStyle = 'black';
+      contextRef.current.strokeStyle = color;
       contextRef.current.lineWidth = 5;
     }
 
@@ -92,7 +93,7 @@ function App() {
 
   return (
     <div>
-      <Toolbar setTool={setTool} />
+      <Toolbar setTool={setTool} setColor={setColor} />
       <canvas
         ref={canvasRef}
         onMouseDown={startDrawing}
