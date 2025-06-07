@@ -18,9 +18,6 @@ lerna-debug.log*
 # Environment variables
 # Ignore all .env files
 .env*
-# Except for the server .env file
-!server/.env
-
 # IDE-specific files
 .idea
 .vscode

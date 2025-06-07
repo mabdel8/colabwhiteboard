@@ -27,6 +27,22 @@ function App() {
   const [color, setColor] = useState<string>('black');
   const [lineWidth, setLineWidth] = useState<number>(5);
 
+  const onDrawingEvent = (data: DrawingData) => {
+    if (!contextRef.current) return;
+    const { x0, y0, x1, y1, color: strokeColor, lineWidth: strokeWidth } = data;
+    const originalStrokeStyle = contextRef.current.strokeStyle;
+    const originalLineWidth = contextRef.current.lineWidth;
+    contextRef.current.strokeStyle = strokeColor;
+    contextRef.current.lineWidth = strokeWidth;
+    contextRef.current.beginPath();
+    contextRef.current.moveTo(x0, y0);
+    contextRef.current.lineTo(x1, y1);
+    contextRef.current.stroke();
+    contextRef.current.closePath();
+    contextRef.current.strokeStyle = originalStrokeStyle;
+    contextRef.current.lineWidth = originalLineWidth;
+  };
+
   useEffect(() => {
     if (!roomId) return;
 
@@ -52,7 +68,24 @@ function App() {
     });
 
     socket.on('drawing', onDrawingEvent);
-  }, [roomId, color, lineWidth]);
+
+    return () => {
+      socket.off('initial-drawings');
+      socket.off('drawing');
+    };
+  }, [roomId]);
+
+  useEffect(() => {
+    if (!contextRef.current) return;
+
+    if (tool === 'eraser') {
+      contextRef.current.strokeStyle = 'white';
+      contextRef.current.lineWidth = 20;
+    } else {
+      contextRef.current.strokeStyle = color;
+      contextRef.current.lineWidth = lineWidth;
+    }
+  }, [tool, color, lineWidth]);
 
   const handleJoinRoom = () => {
     if (roomInput.trim()) {
@@ -82,14 +115,6 @@ function App() {
     const { offsetX, offsetY } = nativeEvent;
     if (!contextRef.current) return;
 
-    if (tool === 'eraser') {
-      contextRef.current.strokeStyle = 'white';
-      contextRef.current.lineWidth = 20;
-    } else {
-      contextRef.current.strokeStyle = color;
-      contextRef.current.lineWidth = lineWidth;
-    }
-
     contextRef.current.lineTo(offsetX, offsetY);
     contextRef.current.stroke();
 
@@ -99,26 +124,10 @@ function App() {
       y0: offsetY,
       x1: offsetX,
       y1: offsetY,
-      color: contextRef.current.strokeStyle,
+      color: contextRef.current.strokeStyle as string,
       lineWidth: contextRef.current.lineWidth,
     };
     socket.emit('drawing', drawingData);
-  };
-
-  const onDrawingEvent = (data: DrawingData) => {
-    if (!contextRef.current) return;
-    const { x0, y0, x1, y1, color: strokeColor, lineWidth } = data;
-    const originalStrokeStyle = contextRef.current.strokeStyle;
-    const originalLineWidth = contextRef.current.lineWidth;
-    contextRef.current.strokeStyle = strokeColor;
-    contextRef.current.lineWidth = lineWidth;
-    contextRef.current.beginPath();
-    contextRef.current.moveTo(x0, y0);
-    contextRef.current.lineTo(x1, y1);
-    contextRef.current.stroke();
-    contextRef.current.closePath();
-    contextRef.current.strokeStyle = originalStrokeStyle;
-    contextRef.current.lineWidth = originalLineWidth;
   };
 
   if (!roomId) {
