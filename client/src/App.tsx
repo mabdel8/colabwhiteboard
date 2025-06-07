@@ -1,12 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
 import Toolbar from './components/Toolbar';
+import './JoinRoom.css';
 
 const socket = io('http://localhost:3001');
 
 type Tool = 'pen' | 'eraser';
 
+interface DrawingData {
+  roomId: string;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  color: string;
+  lineWidth: number;
+}
+
 function App() {
+  const [roomId, setRoomId] = useState<string | null>(null);
+  const [roomInput, setRoomInput] = useState<string>('');
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const drawing = useRef(false);
@@ -14,6 +27,8 @@ function App() {
   const [color, setColor] = useState<string>('black');
 
   useEffect(() => {
+    if (!roomId) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -26,12 +41,24 @@ function App() {
     if (!context) return;
     context.scale(2, 2);
     context.lineCap = 'round';
-    context.strokeStyle = 'black';
+    context.strokeStyle = color;
     context.lineWidth = 5;
     contextRef.current = context;
 
+    socket.on('initial-drawings', (drawings: DrawingData[]) => {
+      if (!contextRef.current) return;
+      drawings.forEach((data) => onDrawingEvent(data));
+    });
+
     socket.on('drawing', onDrawingEvent);
-  }, []);
+  }, [roomId, color]);
+
+  const handleJoinRoom = () => {
+    if (roomInput.trim()) {
+      setRoomId(roomInput.trim());
+      socket.emit('join-room', roomInput.trim());
+    }
+  };
 
   const startDrawing = ({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) => {
     const { offsetX, offsetY } = nativeEvent;
@@ -48,7 +75,7 @@ function App() {
   };
 
   const draw = ({ nativeEvent }: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!drawing.current) {
+    if (!drawing.current || !roomId) {
       return;
     }
     const { offsetX, offsetY } = nativeEvent;
@@ -65,22 +92,24 @@ function App() {
     contextRef.current.lineTo(offsetX, offsetY);
     contextRef.current.stroke();
 
-    socket.emit('drawing', {
+    const drawingData: DrawingData = {
+      roomId,
       x0: offsetX,
       y0: offsetY,
       x1: offsetX,
       y1: offsetY,
       color: contextRef.current.strokeStyle,
       lineWidth: contextRef.current.lineWidth,
-    });
+    };
+    socket.emit('drawing', drawingData);
   };
 
-  const onDrawingEvent = (data: { x0: number, y0: number, x1: number, y1: number, color: string, lineWidth: number }) => {
-    const { x0, y0, x1, y1, color, lineWidth } = data;
+  const onDrawingEvent = (data: DrawingData) => {
     if (!contextRef.current) return;
+    const { x0, y0, x1, y1, color: strokeColor, lineWidth } = data;
     const originalStrokeStyle = contextRef.current.strokeStyle;
     const originalLineWidth = contextRef.current.lineWidth;
-    contextRef.current.strokeStyle = color;
+    contextRef.current.strokeStyle = strokeColor;
     contextRef.current.lineWidth = lineWidth;
     contextRef.current.beginPath();
     contextRef.current.moveTo(x0, y0);
@@ -90,6 +119,24 @@ function App() {
     contextRef.current.strokeStyle = originalStrokeStyle;
     contextRef.current.lineWidth = originalLineWidth;
   };
+
+  if (!roomId) {
+    return (
+      <div className="join-room-container">
+        <div className="join-room-card">
+          <h1>Collaborative Whiteboard</h1>
+          <input
+            type="text"
+            placeholder="Enter Room ID"
+            value={roomInput}
+            onChange={(e) => setRoomInput(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleJoinRoom()}
+          />
+          <button onClick={handleJoinRoom}>Join</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
