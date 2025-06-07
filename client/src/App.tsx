@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import io from 'socket.io-client';
+import Toolbar from './components/Toolbar';
 
 const socket = io('http://localhost:3001');
 
@@ -79,13 +80,16 @@ function App() {
   };
 
   return (
-    <canvas
-      ref={canvasRef}
-      onMouseDown={startDrawing}
-      onMouseUp={finishDrawing}
-      onMouseMove={draw}
-      onMouseLeave={finishDrawing}
-    />
+    <div>
+      <Toolbar />
+      <canvas
+        ref={canvasRef}
+        onMouseDown={startDrawing}
+        onMouseUp={finishDrawing}
+        onMouseMove={draw}
+        onMouseLeave={finishDrawing}
+      />
+    </div>
   );
 }
 
