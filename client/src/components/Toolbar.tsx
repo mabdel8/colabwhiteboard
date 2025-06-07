@@ -1,12 +1,18 @@
 import React from 'react';
 import './Toolbar.css';
 
-const Toolbar: React.FC = () => {
+type Tool = 'pen' | 'eraser';
+
+interface ToolbarProps {
+  setTool: (tool: Tool) => void;
+}
+
+const Toolbar: React.FC<ToolbarProps> = ({ setTool }) => {
   return (
     <div className="toolbar">
       <div className="toolbar-section">
-        <button>Pen</button>
-        <button>Eraser</button>
+        <button onClick={() => setTool('pen')}>Pen</button>
+        <button onClick={() => setTool('eraser')}>Eraser</button>
       </div>
     </div>
   );
