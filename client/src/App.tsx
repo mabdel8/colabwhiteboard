@@ -1,12 +1,16 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
+import Toolbar from './components/Toolbar';
 
 const socket = io('http://localhost:3001');
+
+type Tool = 'pen' | 'eraser';
 
 function App() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const drawing = useRef(false);
+  const [tool, setTool] = useState<Tool>('pen');
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -49,6 +53,14 @@ function App() {
     const { offsetX, offsetY } = nativeEvent;
     if (!contextRef.current) return;
 
+    if (tool === 'eraser') {
+      contextRef.current.strokeStyle = 'white';
+      contextRef.current.lineWidth = 20;
+    } else {
+      contextRef.current.strokeStyle = 'black';
+      contextRef.current.lineWidth = 5;
+    }
+
     contextRef.current.lineTo(offsetX, offsetY);
     contextRef.current.stroke();
 
@@ -79,13 +91,16 @@ function App() {
   };
 
   return (
-    <canvas
-      ref={canvasRef}
-      onMouseDown={startDrawing}
-      onMouseUp={finishDrawing}
-      onMouseMove={draw}
-      onMouseLeave={finishDrawing}
-    />
+    <div>
+      <Toolbar setTool={setTool} />
+      <canvas
+        ref={canvasRef}
+        onMouseDown={startDrawing}
+        onMouseUp={finishDrawing}
+        onMouseMove={draw}
+        onMouseLeave={finishDrawing}
+      />
+    </div>
   );
 }
 
